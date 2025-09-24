@@ -6,6 +6,7 @@ import { NavLink } from "react-router-dom";
 export default function Navbar() {
   const links = [
     { href: "/", label: "Service Bill" },
+    { href: "/night-audit", label: "Night-Audit" },
     // Add more links here
     // { href: "/about", label: "About" },
     // { href: "/contact", label: "Contact" },
