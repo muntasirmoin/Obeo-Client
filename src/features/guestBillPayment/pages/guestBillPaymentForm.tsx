@@ -60,6 +60,12 @@ export const GuestBillPaymentForm: React.FC<Props> = ({
   }
 
   function handlePay() {
+    setRoomId("");
+    setGuest(null);
+    setPaymentType("payment");
+    setPaymentMode("cash");
+    setAmount("");
+    setRemarks("");
     if (!roomId) {
       toast.error("Please select a room before making payment", {
         position: "bottom-center", // <-- set bottom
@@ -88,7 +94,7 @@ export const GuestBillPaymentForm: React.FC<Props> = ({
     toast.success(`Payment recorded: ${payload.invoiceNumber}`, {
       position: "bottom-center", // <-- set bottom
     });
-    setRoomId(rooms[0]?.id ?? "");
+    setRoomId("");
     setGuest(null);
     setPaymentType("payment");
     setPaymentMode("cash");
