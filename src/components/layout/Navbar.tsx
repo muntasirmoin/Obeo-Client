@@ -7,6 +7,7 @@ export default function Navbar() {
   const links = [
     { href: "/", label: "Service Bill" },
     { href: "/night-audit", label: "Night-Audit" },
+    { href: "/guest-bill-payment", label: "Guest-Bill-Payment" },
     // Add more links here
     // { href: "/about", label: "About" },
     // { href: "/contact", label: "Contact" },
