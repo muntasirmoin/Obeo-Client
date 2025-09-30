@@ -1,109 +1,202 @@
-// components/GuestServiceForm.tsx
-import { useState } from "react";
+/* eslint-disable react-hooks/exhaustive-deps */
+import { useForm, Controller, useWatch } from "react-hook-form";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { toast } from "sonner";
+// import TitleSubtitle from "../Components/TitleSubtitle";
 import type { ServiceItem } from "./ServiceBillTable";
 import GuestServiceTable from "./ServiceBillTable";
-import { toast } from "sonner";
-import TitleSubtitle from "../Components/TitleSubtitle";
+
+type FormValues = {
+  guestType: string;
+  registrationNumber: string;
+  fullName: string;
+  guestEmail: string;
+  roomNumber: string;
+  serviceName: string;
+  serviceRate: number;
+  serviceQuantity: number;
+  vat: number;
+  sdCharge: number;
+  additionalCharge: number;
+  serviceCharge: number;
+  complimentary: string;
+  remarks: string;
+  grandTotal: number;
+};
+const fieldLabels: Record<string, string> = {
+  registrationNumber: "Registration Number",
+  fullName: "Full Guest Name",
+  guestEmail: "Guest Email",
+};
+// MOCK fetch function - replace with actual API
+const mockFetchGuestByRoom = async (roomNumber: string) => {
+  await new Promise((resolve) => setTimeout(resolve, 500));
+  const guests = [
+    {
+      guestType: "Regular",
+      registrationNumber: "REG-002",
+      fullName: "Jane Smith",
+      guestEmail: "jane.smith@example.com",
+      roomNumber: "101",
+      serviceName: "Laundry Service",
+      serviceRate: 15,
+      quantity: 2,
+      vat: 1.5,
+      sdCharge: 0.5,
+      additionalCharge: 0,
+      serviceCharge: 0,
+      complimentary: "No",
+      remarks: "Wash & fold only",
+      grandTotal: 32,
+    },
+    {
+      guestType: "VIP",
+      registrationNumber: "REG-001",
+      fullName: "John Doe",
+      guestEmail: "john.doe@example.com",
+      roomNumber: "101",
+      serviceName: "Room Cleaning",
+      serviceRate: 20,
+      quantity: 1,
+      vat: 2,
+      sdCharge: 1,
+      additionalCharge: 0,
+      serviceCharge: 0,
+      complimentary: "No",
+      remarks: "Requested early service",
+      grandTotal: 23,
+    },
+  ];
+  return guests.find((g) => g.roomNumber === roomNumber) || null;
+};
 
 export default function GuestServiceForm() {
-  const [form, setForm] = useState({
-    guestType: "",
-    registrationNumber: "",
-    fullName: "",
-    guestEmail: "",
-    roomNumber: "",
-    serviceName: "",
-    serviceRate: 0,
-    serviceQuantity: 1,
-    vat: 0,
-    sdCharge: 0,
-    additionalCharge: 0,
-    serviceCharge: 0,
-    totalServiceAmount: 0,
-    complimentary: "No",
-    remarks: "",
-    grandTotal: 0,
+  const { register, handleSubmit, control, setValue, getValues, reset, watch } =
+    useForm<FormValues>({
+      defaultValues: {
+        guestType: "",
+        registrationNumber: "",
+        fullName: "",
+        guestEmail: "",
+        roomNumber: "",
+        serviceName: "",
+        serviceRate: 0,
+        serviceQuantity: 1,
+        vat: 0,
+        sdCharge: 0,
+        additionalCharge: 0,
+        serviceCharge: 0,
+        complimentary: "",
+        remarks: "",
+        grandTotal: 0,
+      },
+    });
+
+  const [
+    guestType,
+    registrationNumber,
+    fullName,
+    guestEmail,
+    roomNumber,
+    serviceName,
+    serviceRate,
+    serviceQuantity,
+  ] = useWatch({
+    control,
+    name: [
+      "guestType",
+      "registrationNumber",
+      "fullName",
+      "guestEmail",
+      "roomNumber",
+      "serviceName",
+      "serviceRate",
+      "serviceQuantity",
+    ],
   });
 
   const [tableData, setTableData] = useState<ServiceItem[]>([]);
   const [idCounter, setIdCounter] = useState(1);
 
-  const [vatSelected, setVatSelected] = useState(false);
-  const [serviceRateSelected, setServiceRateSelected] = useState(false);
-  const [sdSelected, setSdSelected] = useState(false);
-  const [additionalSelected, setAdditionalSelected] = useState(false);
-  const [serviceSelected, setServiceSelected] = useState(false);
+  const isAddDisabled =
+    !guestType ||
+    !registrationNumber ||
+    !fullName ||
+    !guestEmail ||
+    !roomNumber ||
+    !serviceName ||
+    !serviceRate ||
+    !serviceQuantity;
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => {
-    const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
-  };
+  // Charges checkboxes
+  const [checkedCharges, setCheckedCharges] = useState({
+    vat: false,
+    sdCharge: false,
+    additionalCharge: false,
+    serviceCharge: false,
+  });
 
-  const handleNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: parseFloat(value) || 0 }));
-  };
-
-  const computeTotalServiceAmount = () => {
+  // Live grandTotal calculation
+  useEffect(() => {
     const total =
-      form.serviceRate * form.serviceQuantity +
-      form.vat +
-      form.sdCharge +
-      form.additionalCharge +
-      form.serviceCharge;
-    setForm((prev) => ({ ...prev, totalServiceAmount: total }));
-  };
+      (Number(serviceRate) || 0) * (Number(serviceQuantity) || 1) +
+      (checkedCharges.vat ? Number(getValues("vat") || 0) : 0) +
+      (checkedCharges.sdCharge ? Number(getValues("sdCharge") || 0) : 0) +
+      (checkedCharges.additionalCharge
+        ? Number(getValues("additionalCharge") || 0)
+        : 0) +
+      (checkedCharges.serviceCharge
+        ? Number(getValues("serviceCharge") || 0)
+        : 0);
 
-  const handleAddService = () => {
-    setServiceSelected(false);
-    setAdditionalSelected(false);
-    setSdSelected(false);
-    setServiceRateSelected(false);
-    setVatSelected(false);
-    setForm({
-      ...form,
-      guestType: "",
-      registrationNumber: "",
-      fullName: "",
-      guestEmail: "",
-      roomNumber: "",
-      serviceName: "",
-      serviceRate: 0,
-      serviceQuantity: 1,
-      vat: 0,
-      sdCharge: 0,
-      additionalCharge: 0,
-      serviceCharge: 0,
-      totalServiceAmount: 0,
-      complimentary: "No",
-      remarks: "",
-      grandTotal: 0,
-    });
-    computeTotalServiceAmount();
+    setValue("grandTotal", total);
+  }, [
+    serviceRate,
+    serviceQuantity,
+    watch("vat"),
+    watch("sdCharge"),
+    watch("additionalCharge"),
+    watch("serviceCharge"),
+    checkedCharges,
+    setValue,
+    getValues,
+  ]);
+
+  const onSubmit = (data: FormValues) => {
     const newItem: ServiceItem = {
       id: idCounter,
-      serviceName: form.serviceName,
-      roomNumber: form.roomNumber,
-      serviceRate: form.serviceRate,
-      quantity: form.serviceQuantity,
-      totalAmount: form.totalServiceAmount,
+      guestType: data.guestType,
+      registrationNumber: data.registrationNumber,
+      fullName: data.fullName,
+      guestEmail: data.guestEmail,
+      roomNumber: data.roomNumber,
+      serviceName: data.serviceName,
+      serviceRate: data.serviceRate,
+      quantity: data.serviceQuantity,
+      totalAmount: data.grandTotal,
+      complimentary: data.complimentary,
+      remarks: data.remarks,
+      vat: data.vat,
+      sdCharge: data.sdCharge,
+      additionalCharge: data.additionalCharge,
+      serviceCharge: data.serviceCharge,
     };
+
     setTableData((prev) => [...prev, newItem]);
     setIdCounter((prev) => prev + 1);
     toast.success("Service added successfully!");
-  };
 
-  const handleCancelService = () => {
-    setServiceSelected(false);
-    setAdditionalSelected(false);
-    setSdSelected(false);
-    setServiceRateSelected(false);
-    setVatSelected(false);
-    setForm({
-      ...form,
+    reset({
       guestType: "",
       registrationNumber: "",
       fullName: "",
@@ -116,222 +209,416 @@ export default function GuestServiceForm() {
       sdCharge: 0,
       additionalCharge: 0,
       serviceCharge: 0,
-      totalServiceAmount: 0,
-      complimentary: "No",
+      complimentary: "",
       remarks: "",
       grandTotal: 0,
     });
-    computeTotalServiceAmount();
-    const newItem: ServiceItem = {
-      id: idCounter,
-      serviceName: form.serviceName,
-      roomNumber: form.roomNumber,
-      serviceRate: form.serviceRate,
-      quantity: form.serviceQuantity,
-      totalAmount: form.totalServiceAmount,
-    };
-    setTableData((prev) => [...prev, newItem]);
-    setIdCounter((prev) => prev + 1);
+
+    setCheckedCharges({
+      vat: false,
+      sdCharge: false,
+      additionalCharge: false,
+      serviceCharge: false,
+    });
+  };
+
+  const handleCancelService = () => {
     toast.error("Canceled!");
+    reset();
+    setCheckedCharges({
+      vat: false,
+      sdCharge: false,
+      additionalCharge: false,
+      serviceCharge: false,
+    });
   };
 
-  const handleRightClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setForm((prev) => ({
-      ...prev,
-      grandTotal: prev.grandTotal + prev.totalServiceAmount,
-    }));
-    toast.success("Added to Grand Total!");
-  };
+  const renderChargeWithCheckbox = (
+    label: string,
+    fieldName: keyof FormValues
+  ) => {
+    const checked = checkedCharges[fieldName as keyof typeof checkedCharges];
+    return (
+      <Controller
+        key={fieldName}
+        control={control}
+        name={fieldName}
+        render={({ field }) => (
+          <div className="flex flex-col">
+            <label className="mb-0.5 ml-0.5 text-left text-xs font-medium text-gray-600">
+              {label}
+            </label>
+            <div className="flex items-center p-1 bg-gray-50 border border-gray-300 rounded-md shadow-sm">
+              {/* <Input
+                type="number"
+                {...field}
+                value={field.value ?? 0}
+                onChange={(e) => {
+                  const val = Number(e.target.value) || 0;
+                  field.onChange(val);
+                  if (
+                    val > 0 &&
+                    !checkedCharges[fieldName as keyof typeof checkedCharges]
+                  ) {
+                    setCheckedCharges((prev) => ({
+                      ...prev,
+                      [fieldName]: true,
+                    }));
+                  } else if (
+                    val === 0 &&
+                    checkedCharges[fieldName as keyof typeof checkedCharges]
+                  ) {
+                    setCheckedCharges((prev) => ({
+                      ...prev,
+                      [fieldName]: false,
+                    }));
+                  }
+                }}
+                className="flex-1 h-8 text-xs border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-400 mr-1"
+              /> */}
+              <Input
+                type="number"
+                {...field}
+                value={field.value ?? ""} // allow empty input
+                onChange={(e) => {
+                  const valStr = e.target.value;
+                  const valNum = valStr === "" ? "" : Number(valStr); // keep empty or convert
 
-  const handleGrandTotalChange = (value: number, checked: boolean) => {
-    setForm((prev) => ({
-      ...prev,
-      grandTotal: checked ? prev.grandTotal + value : prev.grandTotal - value,
-    }));
+                  field.onChange(valNum);
+
+                  // Update checkedCharges only if numeric
+                  if (
+                    valNum !== "" &&
+                    valNum > 0 &&
+                    !checkedCharges[fieldName as keyof typeof checkedCharges]
+                  ) {
+                    setCheckedCharges((prev) => ({
+                      ...prev,
+                      [fieldName]: true,
+                    }));
+                  } else if (
+                    valNum === 0 &&
+                    checkedCharges[fieldName as keyof typeof checkedCharges]
+                  ) {
+                    setCheckedCharges((prev) => ({
+                      ...prev,
+                      [fieldName]: false,
+                    }));
+                  }
+                }}
+                className="flex-1 h-8 text-xs border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-400 mr-1"
+              />
+
+              <Checkbox
+                checked={checked}
+                onCheckedChange={(val) =>
+                  setCheckedCharges((prev) => ({ ...prev, [fieldName]: val }))
+                }
+                className="h-4 w-4 text-blue-600"
+              />
+            </div>
+          </div>
+        )}
+      />
+    );
   };
 
   return (
-    <div className="max-w-7xl mx-auto p-6 space-y-6">
-      {/* Title */}
-      <TitleSubtitle
-        title="Guest Service Form"
-        subtitle="Add services and charges for your guests"
-      />
+    <form
+      onSubmit={handleSubmit(onSubmit)}
+      className="max-w-7xl mx-auto p-2 space-y-0"
+    >
+      {/* <TitleSubtitle
+        title="Service Bill"
+        // subtitle="Add services and charges for your guests"
+      /> */}
 
-      {/* Guest Info Section */}
-      <div className="bg-white shadow-md rounded-lg p-6 grid grid-cols-1 md:grid-cols-6 gap-4">
-        {[
-          {
-            label: "Guest Type",
-            name: "guestType",
-            type: "select",
-            options: ["VIP", "Regular", "Walk-in"],
-          },
-          {
-            label: "Registration Number",
-            name: "registrationNumber",
-            type: "text",
-          },
-          { label: "Full Name", name: "fullName", type: "text" },
-          { label: "Guest Email", name: "guestEmail", type: "email" },
-          { label: "Room", name: "roomNumber", type: "text" },
-          { label: "Service Name", name: "serviceName", type: "text" },
-        ].map((field) => (
-          <div key={field.name} className="flex flex-col">
-            <label className="mb-1 font-medium text-left">{field.label}</label>
-            {field.type === "select" ? (
-              <select
-                name={field.name}
-                value={form[field.name as keyof typeof form]}
-                onChange={handleChange}
-                className="border p-2 rounded focus:ring-2 focus:ring-blue-300"
-              >
-                <option value="">Select</option>
-                {field.options?.map((opt) => (
-                  <option key={opt} value={opt}>
-                    {opt}
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <input
-                type={field.type}
-                name={field.name}
-                value={form[field.name as keyof typeof form]}
-                onChange={
-                  field.type === "number" ? handleNumberChange : handleChange
-                }
-                placeholder={`Enter ${field.label}`}
-                className="border p-2 rounded focus:ring-2 focus:ring-blue-300"
-              />
-            )}
-          </div>
-        ))}
+      <div className="bg-black p-2 rounded-xl">
+        <h1 className="font-extrabold text-left ml-3 text-white">
+          Service Bill
+        </h1>
       </div>
 
-      {/* Charges Section */}
-      <div className="bg-white shadow-md rounded-lg p-6 grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
-        {[
-          {
-            label: "Service Rate",
-            name: "serviceRate",
-            value: form.serviceRate,
-            selected: serviceRateSelected,
-            setSelected: setServiceRateSelected,
-          },
-          {
-            label: "VAT",
-            name: "vat",
-            value: form.vat,
-            selected: vatSelected,
-            setSelected: setVatSelected,
-          },
-          {
-            label: "SD Charge",
-            name: "sdCharge",
-            value: form.sdCharge,
-            selected: sdSelected,
-            setSelected: setSdSelected,
-          },
-          {
-            label: "Additional Charge",
-            name: "additionalCharge",
-            value: form.additionalCharge,
-            selected: additionalSelected,
-            setSelected: setAdditionalSelected,
-          },
-          {
-            label: "Service Charge",
-            name: "serviceCharge",
-            value: form.serviceCharge,
-            selected: serviceSelected,
-            setSelected: setServiceSelected,
-          },
-        ].map(({ label, name, value, selected, setSelected }) => (
-          <div key={name} className="flex items-center space-x-2">
-            <div className="flex-1 flex flex-col">
-              <label className="text-left mb-1 font-medium">{label}</label>
-              <input
-                type="number"
-                name={name}
-                value={value}
-                onChange={handleNumberChange}
-                placeholder={`Enter ${label}`}
-                className="border p-2 rounded focus:ring-2 focus:ring-blue-300"
+      <div className="bg-white shadow-md rounded-lg p-5 space-y-0 border border-gray-200">
+        {/* Guest & Service Info */}
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-2">
+          {/* Guest Type */}
+          <Controller
+            control={control}
+            name="guestType"
+            render={({ field }) => (
+              <div className="flex flex-col space-y-0">
+                <label className="text-left ml-0.5 mb-0.5 text-xs font-medium text-gray-600">
+                  Guest Types <span className="text-red-500">*</span>
+                </label>
+                <Select {...field} onValueChange={field.onChange}>
+                  <SelectTrigger className="h-9 w-full border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 text-sm">
+                    <SelectValue placeholder="Select Guest Type" />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-md shadow text-sm">
+                    <SelectItem value="VIP">VIP</SelectItem>
+                    <SelectItem value="Regular">Regular</SelectItem>
+                    <SelectItem value="Walk-in">Walk-in</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          />
+
+          {["registrationNumber", "fullName", "guestEmail"].map((field) => (
+            <div key={field} className="flex flex-col space-y-0">
+              <label className="text-left ml-0.5 mb-0.5 text-xs font-medium text-gray-600">
+                {fieldLabels[field] || field}
+                <span className="text-red-500">*</span>
+              </label>
+              <Input
+                type={field === "guestEmail" ? "email" : "text"}
+                {...register(field as keyof FormValues, { required: true })}
+                className="h-9 w-full border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 text-sm"
+                placeholder={`Enter ${
+                  field === "fullName" ? "Full Guest Name" : field
+                }`}
               />
             </div>
-            <input
-              type="checkbox"
-              checked={selected}
-              onChange={(e) => {
-                setSelected(e.target.checked);
-                handleGrandTotalChange(Number(value), e.target.checked);
-              }}
-              className="w-6 h-6 mt-6"
+          ))}
+
+          {/* Room Number */}
+          <div className="flex flex-col space-y-0">
+            <label className="text-left ml-0.5 mb-0.5 text-xs font-medium text-gray-600">
+              Room Number <span className="text-red-500">*</span>
+            </label>
+            <Input
+              type="text"
+              {...register("roomNumber", { required: true })}
+              placeholder="Enter room number"
+              className="h-9 w-full border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 text-sm"
             />
           </div>
-        ))}
-      </div>
 
-      {/* Total & Remarks Section */}
-      <div
-        className="bg-white shadow-md rounded-lg p-6 grid grid-cols-1 md:grid-cols-3 gap-4"
-        onContextMenu={handleRightClick}
-      >
-        <div className="flex flex-col">
-          <label className="mb-1 font-medium">Total Service Amount</label>
-          <input
-            type="number"
-            value={form.grandTotal}
-            readOnly
-            className="border p-2 rounded bg-gray-50"
+          {/* Search Button */}
+          <div className="flex flex-col justify-end">
+            <Button
+              type="button"
+              className="h-10 w-full bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md text-sm shadow-sm"
+              onClick={async () => {
+                const roomNum = getValues("roomNumber");
+                if (!roomNum) return;
+                const guestData = await mockFetchGuestByRoom(roomNum);
+                if (!guestData) {
+                  toast.error("No guest found for this room!");
+                  return;
+                }
+
+                const totalServiceAmount =
+                  (Number(guestData.serviceRate) || 0) *
+                    (Number(guestData.quantity) || 1) +
+                  (Number(guestData.vat) || 0) +
+                  (Number(guestData.sdCharge) || 0) +
+                  (Number(guestData.additionalCharge) || 0) +
+                  (Number(guestData.serviceCharge) || 0);
+
+                setTableData((prev) => [
+                  ...prev,
+                  {
+                    id: idCounter,
+                    guestType: guestData.guestType ?? "",
+                    registrationNumber: guestData.registrationNumber ?? "",
+                    fullName: guestData.fullName ?? "",
+                    guestEmail: guestData.guestEmail ?? "",
+                    roomNumber: guestData.roomNumber ?? "",
+                    serviceName: guestData.serviceName ?? "",
+                    serviceRate: Number(guestData.serviceRate) || 0,
+                    quantity: Number(guestData.quantity) || 1,
+                    totalAmount: totalServiceAmount,
+                    complimentary: guestData.complimentary ?? "",
+                    remarks: guestData.remarks ?? "",
+                    vat: Number(guestData.vat) || 0,
+                    sdCharge: Number(guestData.sdCharge) || 0,
+                    additionalCharge: Number(guestData.additionalCharge) || 0,
+                    serviceCharge: Number(guestData.serviceCharge) || 0,
+                  },
+                ]);
+                setIdCounter((prev) => prev + 1);
+                setValue("grandTotal", totalServiceAmount);
+
+                toast.success("Guest service added from room search!");
+              }}
+            >
+              Search
+            </Button>
+          </div>
+
+          {/* Service Name */}
+          <Controller
+            control={control}
+            name="serviceName"
+            render={({ field }) => (
+              <div className="flex flex-col space-y-0">
+                <label className="text-left ml-0.5 mb-0.5 text-xs font-medium text-gray-600">
+                  Service Name <span className="text-red-500">*</span>
+                </label>
+                <Select {...field} onValueChange={field.onChange}>
+                  <SelectTrigger className="h-9 w-full border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 text-sm">
+                    <SelectValue placeholder="Select Service" />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-md shadow text-sm">
+                    <SelectItem value="Room Cleaning">Room Cleaning</SelectItem>
+                    <SelectItem value="Laundry Service">
+                      Laundry Service
+                    </SelectItem>
+                    <SelectItem value="Food Delivery">Food Delivery</SelectItem>
+                    <SelectItem value="Spa Treatment">Spa Treatment</SelectItem>
+                    <SelectItem value="Airport Pickup">
+                      Airport Pickup
+                    </SelectItem>
+                    <SelectItem value="Minibar">Minibar</SelectItem>
+                    <SelectItem value="Extra Bed">Extra Bed</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           />
-        </div>
-        <div className="flex flex-col">
-          <label className="mb-1 font-medium">Complimentary</label>
-          <select
+
+          {/* Complimentary */}
+          <Controller
+            control={control}
             name="complimentary"
-            value={form.complimentary}
-            onChange={handleChange}
-            className="border p-2 rounded focus:ring-2 focus:ring-blue-300"
-          >
-            <option value="No">No</option>
-            <option value="Yes">Yes</option>
-          </select>
-        </div>
-        <div className="flex flex-col">
-          <label className="mb-1 font-medium">Remarks</label>
-          <input
-            type="text"
-            name="remarks"
-            value={form.remarks}
-            onChange={handleChange}
-            placeholder="Remarks"
-            className="border p-2 rounded focus:ring-2 focus:ring-blue-300"
+            render={({ field }) => (
+              <div className="flex flex-col space-y-0">
+                <label className="text-left ml-0.5 mb-0.5 text-xs font-medium text-gray-600">
+                  Complimentary Item
+                </label>
+                <Select {...field} onValueChange={field.onChange}>
+                  <SelectTrigger className="h-9 w-full border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 text-sm">
+                    <SelectValue placeholder="Select Complimentary" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="No">No</SelectItem>
+                    <SelectItem value="Yes">Yes</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          />
+
+          {/* Remarks */}
+          <div className="flex flex-col space-y-0 md:col-span-2">
+            <label className="text-left ml-0.5 mb-0.5 text-xs font-medium text-gray-600">
+              Remarks
+            </label>
+            <Input
+              type="text"
+              {...register("remarks")}
+              className="h-9 w-full border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 text-sm"
+              placeholder="Enter remarks"
+            />
+          </div>
+
+          {/* Service Rate */}
+          <Controller
+            control={control}
+            name="serviceRate"
+            render={({ field }) => (
+              <div className="flex flex-col space-y-0">
+                <label className="text-xs text-left mb-0.5 ml-0.5 font-medium text-gray-600">
+                  Service Rate <span className="text-red-500">*</span>
+                </label>
+                {/* <Input
+                  type="number"
+                  {...field}
+                  value={field.value ?? 0}
+                  onChange={(e) => field.onChange(Number(e.target.value) || 0)}
+                  className="h-9 w-full border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 text-sm"
+                /> */}
+                <Input
+                  type="number"
+                  {...field}
+                  value={field.value ?? ""} // allow empty string
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    field.onChange(val === "" ? "" : Number(val)); // keep empty string if erased
+                  }}
+                  className="h-9 w-full border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 text-sm"
+                />
+              </div>
+            )}
+          />
+
+          {/* Service Quantity */}
+          <Controller
+            control={control}
+            name="serviceQuantity"
+            render={({ field }) => (
+              <div className="flex flex-col space-y-1">
+                <label className="text-xs text-left mb-0.5 ml-0.5 font-medium text-gray-600">
+                  Service Quantity <span className="text-red-500">*</span>
+                </label>
+                <Input
+                  type="number"
+                  min={1}
+                  {...field}
+                  value={field.value ?? 1}
+                  onChange={(e) => field.onChange(Number(e.target.value) || 1)}
+                />
+              </div>
+            )}
           />
         </div>
+
+        {/* Charges */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-2 mt-2 mb-2">
+          {renderChargeWithCheckbox("VAT", "vat")}
+          {renderChargeWithCheckbox("SD Charge", "sdCharge")}
+          {renderChargeWithCheckbox("Additional Charge", "additionalCharge")}
+          {renderChargeWithCheckbox("Service Charge", "serviceCharge")}
+        </div>
+
+        {/* Total & Actions */}
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+          <div className="flex flex-col space-y-0">
+            <label className="text-xs mb-0.5 ml-0.5 text-left font-medium text-gray-600">
+              Total Amount
+            </label>
+            <Input
+              type="number"
+              {...register("grandTotal")}
+              readOnly
+              className="bg-gray-50 h-9 w-full border border-gray-300 rounded-md text-sm"
+            />
+          </div>
+
+          <div className="flex flex-col">
+            <label className="text-xs font-medium opacity-0">Add</label>
+            <Button
+              type="submit"
+              disabled={isAddDisabled}
+              className={`h-9 text-sm w-full rounded-md shadow-sm ${
+                isAddDisabled
+                  ? "bg-green-300 cursor-not-allowed"
+                  : "bg-green-500 hover:bg-green-600 cursor-pointer"
+              }`}
+            >
+              Add
+            </Button>
+          </div>
+
+          <div className="flex flex-col">
+            <label className="text-xs font-medium opacity-0">Cancel</label>
+            <Button
+              type="button"
+              className="h-9 text-sm w-full rounded-md shadow-sm bg-red-500 hover:bg-red-600"
+              onClick={handleCancelService}
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
       </div>
 
-      {/* Action Buttons */}
-      <div className="flex space-x-4">
-        <Button
-          className="bg-green-500 hover:bg-green-600 text-white rounded shadow-md"
-          onClick={handleAddService}
-        >
-          Add
-        </Button>
-        <Button
-          variant="outline"
-          className="border-red-500 text-red-500 hover:bg-red-500 hover:text-white rounded shadow-md"
-          onClick={handleCancelService}
-        >
-          Cancel
-        </Button>
+      {/* Guest Service Table */}
+      <div className="mt-4">
+        <GuestServiceTable tableData={tableData} setTableData={setTableData} />
       </div>
-
-      {/* Service Table */}
-      <GuestServiceTable tableData={tableData} setTableData={setTableData} />
-    </div>
+    </form>
   );
 }
