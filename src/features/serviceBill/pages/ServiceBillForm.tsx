@@ -333,13 +333,13 @@ export default function GuestServiceForm() {
         // subtitle="Add services and charges for your guests"
       /> */}
 
-      <div className="bg-black p-2 rounded-xl">
+      <div className="bg-black p-2">
         <h1 className="font-extrabold text-left ml-3 text-white">
           Service Bill
         </h1>
       </div>
 
-      <div className="bg-white shadow-md rounded-lg p-5 space-y-0 border border-gray-200">
+      <div className="bg-white shadow-md  p-5 space-y-0 border border-gray-200">
         {/* Guest & Service Info */}
         <div className="grid grid-cols-1 md:grid-cols-6 gap-2">
           {/* Guest Type */}
