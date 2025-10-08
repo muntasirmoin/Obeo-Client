@@ -12,14 +12,15 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import GuestServiceTable from "./ServiceBillTable";
+
 import {
   guestServiceSchema,
   type ChargeField,
   type FormValues,
-} from "../types/guestServiceSchema";
+} from "../validations/guestServiceSchema";
 import { mockFetchGuestByRoom } from "../types/mockFetchData";
 import type { ServiceItem } from "../types/guestServiceType";
+import GuestServiceTable from "./ServiceBillTable";
 
 const fieldLabels: Record<string, string> = {
   registrationNumber: "Registration Number",
