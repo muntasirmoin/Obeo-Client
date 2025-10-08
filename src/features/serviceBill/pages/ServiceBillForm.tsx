@@ -1,5 +1,5 @@
-/* eslint-disable react-hooks/exhaustive-deps */
 import { useForm, Controller, useWatch } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,144 +12,83 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-// import TitleSubtitle from "../Components/TitleSubtitle";
-import type { ServiceItem } from "./ServiceBillTable";
 import GuestServiceTable from "./ServiceBillTable";
+import {
+  guestServiceSchema,
+  type ChargeField,
+  type FormValues,
+} from "../types/guestServiceSchema";
+import { mockFetchGuestByRoom } from "../types/mockFetchData";
+import type { ServiceItem } from "../types/guestServiceType";
 
-type FormValues = {
-  guestType: string;
-  registrationNumber: string;
-  fullName: string;
-  guestEmail: string;
-  roomNumber: string;
-  serviceName: string;
-  serviceRate: number;
-  serviceQuantity: number;
-  vat: number;
-  sdCharge: number;
-  additionalCharge: number;
-  serviceCharge: number;
-  complimentary: string;
-  remarks: string;
-  grandTotal: number;
-};
 const fieldLabels: Record<string, string> = {
   registrationNumber: "Registration Number",
   fullName: "Full Guest Name",
   guestEmail: "Guest Email",
 };
-// MOCK fetch function - replace with actual API
-const mockFetchGuestByRoom = async (roomNumber: string) => {
-  await new Promise((resolve) => setTimeout(resolve, 500));
-  const guests = [
-    {
-      guestType: "Regular",
-      registrationNumber: "REG-002",
-      fullName: "Jane Smith",
-      guestEmail: "jane.smith@example.com",
-      roomNumber: "101",
-      serviceName: "Laundry Service",
-      serviceRate: 15,
-      quantity: 2,
-      vat: 1.5,
-      sdCharge: 0.5,
-      additionalCharge: 0,
-      serviceCharge: 0,
-      complimentary: "No",
-      remarks: "Wash & fold only",
-      grandTotal: 32,
-    },
-    {
-      guestType: "VIP",
-      registrationNumber: "REG-001",
-      fullName: "John Doe",
-      guestEmail: "john.doe@example.com",
-      roomNumber: "101",
-      serviceName: "Room Cleaning",
-      serviceRate: 20,
-      quantity: 1,
-      vat: 2,
-      sdCharge: 1,
-      additionalCharge: 0,
-      serviceCharge: 0,
-      complimentary: "No",
-      remarks: "Requested early service",
-      grandTotal: 23,
-    },
-  ];
-  return guests.find((g) => g.roomNumber === roomNumber) || null;
-};
+const fields = Object.keys(fieldLabels);
 
+// ----------------- GuestServiceForm -----------------
 export default function GuestServiceForm() {
-  const { register, handleSubmit, control, setValue, getValues, reset, watch } =
-    useForm<FormValues>({
-      defaultValues: {
-        guestType: "",
-        registrationNumber: "",
-        fullName: "",
-        guestEmail: "",
-        roomNumber: "",
-        serviceName: "",
-        serviceRate: 0,
-        serviceQuantity: 1,
-        vat: 0,
-        sdCharge: 0,
-        additionalCharge: 0,
-        serviceCharge: 0,
-        complimentary: "",
-        remarks: "",
-        grandTotal: 0,
-      },
-    });
-
-  const [
-    guestType,
-    registrationNumber,
-    fullName,
-    guestEmail,
-    roomNumber,
-    serviceName,
-    serviceRate,
-    serviceQuantity,
-  ] = useWatch({
+  const {
+    register,
+    handleSubmit,
     control,
-    name: [
-      "guestType",
-      "registrationNumber",
-      "fullName",
-      "guestEmail",
-      "roomNumber",
-      "serviceName",
-      "serviceRate",
-      "serviceQuantity",
-    ],
+    setValue,
+    getValues,
+    reset,
+
+    formState: { errors },
+  } = useForm<FormValues>({
+    resolver: zodResolver(guestServiceSchema),
+    defaultValues: {
+      guestType: "",
+      registrationNumber: "",
+      fullName: "",
+      guestEmail: "",
+      roomNumber: "",
+      serviceName: "",
+      serviceRate: 0,
+      serviceQuantity: 1,
+      vat: 0,
+      sdCharge: 0,
+      additionalCharge: 0,
+      serviceCharge: 0,
+      complimentary: "",
+      remarks: "",
+      grandTotal: 0,
+    },
   });
 
   const [tableData, setTableData] = useState<ServiceItem[]>([]);
   const [idCounter, setIdCounter] = useState(1);
 
-  const isAddDisabled =
-    !guestType ||
-    !registrationNumber ||
-    !fullName ||
-    !guestEmail ||
-    !roomNumber ||
-    !serviceName ||
-    !serviceRate ||
-    !serviceQuantity;
-
-  // Charges checkboxes
-  const [checkedCharges, setCheckedCharges] = useState({
+  const [checkedCharges, setCheckedCharges] = useState<
+    Record<ChargeField, boolean>
+  >({
     vat: false,
     sdCharge: false,
     additionalCharge: false,
     serviceCharge: false,
   });
 
-  // Live grandTotal calculation
+  const watchedFields = useWatch({
+    control,
+    name: [
+      "serviceRate",
+      "serviceQuantity",
+      "vat",
+      "sdCharge",
+      "additionalCharge",
+      "serviceCharge",
+    ],
+  });
+
+  // Live Grand Total
   useEffect(() => {
     const total =
-      (Number(serviceRate) || 0) * (Number(serviceQuantity) || 1) +
+      (Number(getValues("serviceRate")) || 0) *
+        (Number(getValues("serviceQuantity")) || 1) +
       (checkedCharges.vat ? Number(getValues("vat") || 0) : 0) +
       (checkedCharges.sdCharge ? Number(getValues("sdCharge") || 0) : 0) +
       (checkedCharges.additionalCharge
@@ -158,19 +97,8 @@ export default function GuestServiceForm() {
       (checkedCharges.serviceCharge
         ? Number(getValues("serviceCharge") || 0)
         : 0);
-
     setValue("grandTotal", total);
-  }, [
-    serviceRate,
-    serviceQuantity,
-    watch("vat"),
-    watch("sdCharge"),
-    watch("additionalCharge"),
-    watch("serviceCharge"),
-    checkedCharges,
-    setValue,
-    getValues,
-  ]);
+  }, [watchedFields, checkedCharges, getValues, setValue]);
 
   const onSubmit = (data: FormValues) => {
     const newItem: ServiceItem = {
@@ -184,18 +112,19 @@ export default function GuestServiceForm() {
       serviceRate: data.serviceRate,
       quantity: data.serviceQuantity,
       totalAmount: data.grandTotal,
-      complimentary: data.complimentary,
-      remarks: data.remarks,
-      vat: data.vat,
-      sdCharge: data.sdCharge,
-      additionalCharge: data.additionalCharge,
-      serviceCharge: data.serviceCharge,
+      complimentary: data.complimentary || "",
+      remarks: data.remarks || "",
+      vat: data.vat || 0,
+      sdCharge: data.sdCharge || 0,
+      additionalCharge: data.additionalCharge || 0,
+      serviceCharge: data.serviceCharge || 0,
     };
 
+    // ----- set Table Data during add service ----------
     setTableData((prev) => [...prev, newItem]);
     setIdCounter((prev) => prev + 1);
     toast.success("Service added successfully!");
-
+    // ------- reset from ------------
     reset({
       guestType: "",
       registrationNumber: "",
@@ -213,7 +142,6 @@ export default function GuestServiceForm() {
       remarks: "",
       grandTotal: 0,
     });
-
     setCheckedCharges({
       vat: false,
       sdCharge: false,
@@ -233,11 +161,9 @@ export default function GuestServiceForm() {
     });
   };
 
-  const renderChargeWithCheckbox = (
-    label: string,
-    fieldName: keyof FormValues
-  ) => {
-    const checked = checkedCharges[fieldName as keyof typeof checkedCharges];
+  // ----------------- Render Charges -----------------
+  const renderChargeWithCheckbox = (label: string, fieldName: ChargeField) => {
+    const checked = checkedCharges[fieldName];
     return (
       <Controller
         key={fieldName}
@@ -249,66 +175,33 @@ export default function GuestServiceForm() {
               {label}
             </label>
             <div className="flex items-center p-1 bg-gray-50 border border-gray-300 rounded-md shadow-sm">
-              {/* <Input
-                type="number"
-                {...field}
-                value={field.value ?? 0}
-                onChange={(e) => {
-                  const val = Number(e.target.value) || 0;
-                  field.onChange(val);
-                  if (
-                    val > 0 &&
-                    !checkedCharges[fieldName as keyof typeof checkedCharges]
-                  ) {
-                    setCheckedCharges((prev) => ({
-                      ...prev,
-                      [fieldName]: true,
-                    }));
-                  } else if (
-                    val === 0 &&
-                    checkedCharges[fieldName as keyof typeof checkedCharges]
-                  ) {
-                    setCheckedCharges((prev) => ({
-                      ...prev,
-                      [fieldName]: false,
-                    }));
-                  }
-                }}
-                className="flex-1 h-8 text-xs border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-400 mr-1"
-              /> */}
               <Input
                 type="number"
                 {...field}
-                value={field.value ?? ""} // allow empty input
+                value={field.value ?? ""}
                 onChange={(e) => {
-                  const valStr = e.target.value;
-                  const valNum = valStr === "" ? "" : Number(valStr); // keep empty or convert
+                  const val = e.target.value;
 
-                  field.onChange(valNum);
-
-                  // Update checkedCharges only if numeric
-                  if (
-                    valNum !== "" &&
-                    valNum > 0 &&
-                    !checkedCharges[fieldName as keyof typeof checkedCharges]
-                  ) {
-                    setCheckedCharges((prev) => ({
-                      ...prev,
-                      [fieldName]: true,
-                    }));
-                  } else if (
-                    valNum === 0 &&
-                    checkedCharges[fieldName as keyof typeof checkedCharges]
-                  ) {
+                  // allow empty string while typing
+                  if (val === "") {
+                    field.onChange("");
                     setCheckedCharges((prev) => ({
                       ...prev,
                       [fieldName]: false,
                     }));
+                    return;
                   }
+
+                  // prevent negative numbers
+                  const valNum = Math.max(Number(val), 0);
+                  field.onChange(valNum);
+                  setCheckedCharges((prev) => ({
+                    ...prev,
+                    [fieldName]: valNum > 0,
+                  }));
                 }}
                 className="flex-1 h-8 text-xs border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-400 mr-1"
               />
-
               <Checkbox
                 checked={checked}
                 onCheckedChange={(val) =>
@@ -317,6 +210,14 @@ export default function GuestServiceForm() {
                 className="h-4 w-4 text-blue-600"
               />
             </div>
+            {errors[fieldName] && (
+              <span className="text-red-500 text-xs mt-0.5">
+                {errors[fieldName]?.message?.toString() ===
+                "Invalid input: expected number, received string"
+                  ? "Expected number"
+                  : errors[fieldName]?.message?.toString()}
+              </span>
+            )}
           </div>
         )}
       />
@@ -326,13 +227,8 @@ export default function GuestServiceForm() {
   return (
     <form
       onSubmit={handleSubmit(onSubmit)}
-      className="max-w-7xl mx-auto p-2 space-y-0"
+      className="w-full mx-auto p-2 space-y-0"
     >
-      {/* <TitleSubtitle
-        title="Service Bill"
-        // subtitle="Add services and charges for your guests"
-      /> */}
-
       <div className="bg-black p-2">
         <h1 className="font-extrabold text-left ml-3 text-white">
           Service Bill
@@ -346,6 +242,7 @@ export default function GuestServiceForm() {
           <Controller
             control={control}
             name="guestType"
+            rules={{ required: "Guest Type is required" }} // <-- add validation
             render={({ field }) => (
               <div className="flex flex-col space-y-0">
                 <label className="text-left ml-0.5 mb-0.5 text-xs font-medium text-gray-600">
@@ -361,11 +258,16 @@ export default function GuestServiceForm() {
                     <SelectItem value="Walk-in">Walk-in</SelectItem>
                   </SelectContent>
                 </Select>
+                {errors.guestType && (
+                  <span className="text-red-500 text-xs mt-0.5">
+                    {errors.guestType.message}
+                  </span>
+                )}
               </div>
             )}
           />
-
-          {["registrationNumber", "fullName", "guestEmail"].map((field) => (
+          {/* ---------------------"registrationNumber", "fullName", "guestEmail"--------------- */}
+          {fields.map((field) => (
             <div key={field} className="flex flex-col space-y-0">
               <label className="text-left ml-0.5 mb-0.5 text-xs font-medium text-gray-600">
                 {fieldLabels[field] || field}
@@ -373,12 +275,17 @@ export default function GuestServiceForm() {
               </label>
               <Input
                 type={field === "guestEmail" ? "email" : "text"}
-                {...register(field as keyof FormValues, { required: true })}
+                {...register(field as keyof FormValues)}
                 className="h-9 w-full border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 text-sm"
                 placeholder={`Enter ${
                   field === "fullName" ? "Full Guest Name" : field
                 }`}
               />
+              {errors[field as keyof FormValues] && (
+                <span className="text-red-500 text-xs mt-0.5">
+                  {errors[field as keyof FormValues]?.message?.toString()}
+                </span>
+              )}
             </div>
           ))}
 
@@ -389,14 +296,19 @@ export default function GuestServiceForm() {
             </label>
             <Input
               type="text"
-              {...register("roomNumber", { required: true })}
+              {...register("roomNumber")}
               placeholder="Enter room number"
               className="h-9 w-full border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 text-sm"
             />
+            {errors.roomNumber && (
+              <span className="text-red-500 text-xs mt-0.5">
+                {errors.roomNumber.message}
+              </span>
+            )}
           </div>
 
           {/* Search Button */}
-          <div className="flex flex-col justify-end">
+          <div className="flex flex-col justify-end space-y-0">
             <Button
               type="button"
               className="h-10 w-full bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md text-sm shadow-sm"
@@ -408,7 +320,6 @@ export default function GuestServiceForm() {
                   toast.error("No guest found for this room!");
                   return;
                 }
-
                 const totalServiceAmount =
                   (Number(guestData.serviceRate) || 0) *
                     (Number(guestData.quantity) || 1) +
@@ -421,21 +332,21 @@ export default function GuestServiceForm() {
                   ...prev,
                   {
                     id: idCounter,
-                    guestType: guestData.guestType ?? "",
-                    registrationNumber: guestData.registrationNumber ?? "",
-                    fullName: guestData.fullName ?? "",
-                    guestEmail: guestData.guestEmail ?? "",
-                    roomNumber: guestData.roomNumber ?? "",
-                    serviceName: guestData.serviceName ?? "",
-                    serviceRate: Number(guestData.serviceRate) || 0,
-                    quantity: Number(guestData.quantity) || 1,
+                    guestType: guestData.guestType,
+                    registrationNumber: guestData.registrationNumber,
+                    fullName: guestData.fullName,
+                    guestEmail: guestData.guestEmail,
+                    roomNumber: guestData.roomNumber,
+                    serviceName: guestData.serviceName,
+                    serviceRate: guestData.serviceRate,
+                    quantity: guestData.quantity,
                     totalAmount: totalServiceAmount,
-                    complimentary: guestData.complimentary ?? "",
+                    complimentary: guestData.complimentary,
                     remarks: guestData.remarks ?? "",
-                    vat: Number(guestData.vat) || 0,
-                    sdCharge: Number(guestData.sdCharge) || 0,
-                    additionalCharge: Number(guestData.additionalCharge) || 0,
-                    serviceCharge: Number(guestData.serviceCharge) || 0,
+                    vat: guestData.vat,
+                    sdCharge: guestData.sdCharge,
+                    additionalCharge: guestData.additionalCharge,
+                    serviceCharge: guestData.serviceCharge,
                   },
                 ]);
                 setIdCounter((prev) => prev + 1);
@@ -446,12 +357,18 @@ export default function GuestServiceForm() {
             >
               Search
             </Button>
+            {(errors.roomNumber ||
+              errors.guestType ||
+              errors.registrationNumber ||
+              errors.fullName ||
+              errors.guestEmail) && <div className="h-4" />}
           </div>
 
           {/* Service Name */}
           <Controller
             control={control}
             name="serviceName"
+            rules={{ required: "Service Name is required" }} // <-- add this
             render={({ field }) => (
               <div className="flex flex-col space-y-0">
                 <label className="text-left ml-0.5 mb-0.5 text-xs font-medium text-gray-600">
@@ -475,6 +392,11 @@ export default function GuestServiceForm() {
                     <SelectItem value="Extra Bed">Extra Bed</SelectItem>
                   </SelectContent>
                 </Select>
+                {errors.serviceName && (
+                  <span className="text-red-500 text-xs mt-0.5">
+                    {errors.serviceName.message}
+                  </span>
+                )}
               </div>
             )}
           />
@@ -483,10 +405,11 @@ export default function GuestServiceForm() {
           <Controller
             control={control}
             name="complimentary"
+            rules={{ required: "Please select  complimentary" }} // <-- validation rule
             render={({ field }) => (
               <div className="flex flex-col space-y-0">
                 <label className="text-left ml-0.5 mb-0.5 text-xs font-medium text-gray-600">
-                  Complimentary Item
+                  Complimentary Item <span className="text-red-500">*</span>
                 </label>
                 <Select {...field} onValueChange={field.onChange}>
                   <SelectTrigger className="h-9 w-full border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 text-sm">
@@ -497,6 +420,11 @@ export default function GuestServiceForm() {
                     <SelectItem value="Yes">Yes</SelectItem>
                   </SelectContent>
                 </Select>
+                {errors.complimentary && (
+                  <span className="text-red-500 text-xs mt-0.5">
+                    {errors.complimentary.message}
+                  </span>
+                )}
               </div>
             )}
           />
@@ -509,8 +437,8 @@ export default function GuestServiceForm() {
             <Input
               type="text"
               {...register("remarks")}
-              className="h-9 w-full border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 text-sm"
               placeholder="Enter remarks"
+              className="h-9 w-full border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 text-sm"
             />
           </div>
 
@@ -519,27 +447,29 @@ export default function GuestServiceForm() {
             control={control}
             name="serviceRate"
             render={({ field }) => (
-              <div className="flex flex-col space-y-0">
+              <div className="flex flex-col space-y-1">
                 <label className="text-xs text-left mb-0.5 ml-0.5 font-medium text-gray-600">
                   Service Rate <span className="text-red-500">*</span>
                 </label>
-                {/* <Input
-                  type="number"
-                  {...field}
-                  value={field.value ?? 0}
-                  onChange={(e) => field.onChange(Number(e.target.value) || 0)}
-                  className="h-9 w-full border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 text-sm"
-                /> */}
                 <Input
                   type="number"
                   {...field}
-                  value={field.value ?? ""} // allow empty string
+                  min={0}
+                  value={field.value ?? ""}
                   onChange={(e) => {
                     const val = e.target.value;
-                    field.onChange(val === "" ? "" : Number(val)); // keep empty string if erased
+                    field.onChange(val === "" ? "" : Number(val));
                   }}
-                  className="h-9 w-full border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 text-sm"
+                  className="h-9 w-full"
                 />
+                {errors.serviceRate && (
+                  <span className="text-red-500 text-xs">
+                    {errors.serviceRate.message ===
+                    "Invalid input: expected number, received string"
+                      ? "Expected number"
+                      : errors.serviceRate.message}
+                  </span>
+                )}
               </div>
             )}
           />
@@ -555,26 +485,49 @@ export default function GuestServiceForm() {
                 </label>
                 <Input
                   type="number"
-                  min={1}
                   {...field}
-                  value={field.value ?? 1}
-                  onChange={(e) => field.onChange(Number(e.target.value) || 1)}
+                  min={1}
+                  value={field.value ?? ""}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    // Allow empty string for erasing
+                    if (val === "") {
+                      field.onChange("");
+                    } else {
+                      const num = Number(val);
+                      // Only accept >= 1
+                      field.onChange(num < 1 ? 1 : num);
+                    }
+                  }}
+                  onWheel={(e) => (e.currentTarget as HTMLInputElement).blur()} // prevent scroll
                 />
+                {errors.serviceQuantity && (
+                  <span className="text-red-500 text-xs">
+                    {errors.serviceQuantity.message ===
+                    "Invalid input: expected number, received string"
+                      ? "Expected number"
+                      : errors.serviceQuantity.message}
+                  </span>
+                )}
               </div>
             )}
           />
         </div>
 
         {/* Charges */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-2 mt-2 mb-2">
-          {renderChargeWithCheckbox("VAT", "vat")}
-          {renderChargeWithCheckbox("SD Charge", "sdCharge")}
-          {renderChargeWithCheckbox("Additional Charge", "additionalCharge")}
-          {renderChargeWithCheckbox("Service Charge", "serviceCharge")}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-2">
+          {(
+            [
+              "vat",
+              "sdCharge",
+              "additionalCharge",
+              "serviceCharge",
+            ] as ChargeField[]
+          ).map((c) => renderChargeWithCheckbox(c.toUpperCase(), c))}
         </div>
 
-        {/* Total & Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+        {/* Grand Total */}
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end mt-1">
           <div className="flex flex-col space-y-0">
             <label className="text-xs mb-0.5 ml-0.5 text-left font-medium text-gray-600">
               Total Amount
@@ -586,27 +539,17 @@ export default function GuestServiceForm() {
               className="bg-gray-50 h-9 w-full border border-gray-300 rounded-md text-sm"
             />
           </div>
-
-          <div className="flex flex-col">
-            <label className="text-xs font-medium opacity-0">Add</label>
+          {/* Buttons */}
+          <div className="mt-3 flex space-x-2">
             <Button
               type="submit"
-              disabled={isAddDisabled}
-              className={`h-9 text-sm w-full rounded-md shadow-sm ${
-                isAddDisabled
-                  ? "bg-green-300 cursor-not-allowed"
-                  : "bg-green-500 hover:bg-green-600 cursor-pointer"
-              }`}
+              className="bg-green-600 hover:bg-green-700 text-white"
             >
-              Add
+              Add Service
             </Button>
-          </div>
-
-          <div className="flex flex-col">
-            <label className="text-xs font-medium opacity-0">Cancel</label>
             <Button
               type="button"
-              className="h-9 text-sm w-full rounded-md shadow-sm bg-red-500 hover:bg-red-600"
+              className="bg-red-600 hover:bg-red-700 text-white"
               onClick={handleCancelService}
             >
               Cancel
@@ -615,8 +558,8 @@ export default function GuestServiceForm() {
         </div>
       </div>
 
-      {/* Guest Service Table */}
-      <div className="mt-4">
+      {/* Table */}
+      <div className="mt-5">
         <GuestServiceTable tableData={tableData} setTableData={setTableData} />
       </div>
     </form>
