@@ -1,18 +1,15 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
+import { useState, useEffect, useMemo } from "react";
 import {
-  Table,
-  TableBody,
-  TableCaption,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+  createColumnHelper,
+  flexRender,
+  getCoreRowModel,
+  useReactTable,
+} from "@tanstack/react-table";
+import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import type { ServiceItem } from "../types/guestServiceType";
-import GuestServiceModal from "../Components/GuestServiceModal";
+import GuestServiceModal from "./GuestServiceModal";
 
 interface TableProps {
   tableData: ServiceItem[];
@@ -30,6 +27,7 @@ export default function GuestServiceTable({
     setTableData((prev) => prev.filter((item) => item.id !== id));
     toast.error("Deleted successfully!");
   };
+
   const handleSave = (id: number) => {
     setTableData((prev) => prev.filter((item) => item.id !== id));
     toast.success("Save successfully!");
@@ -43,7 +41,6 @@ export default function GuestServiceTable({
   const handleSaveEdit = () => {
     if (!editingItem) return;
 
-    // Automatically recalc totalAmount
     const total =
       editingItem.serviceRate * editingItem.quantity +
       editingItem.vat +
@@ -62,7 +59,6 @@ export default function GuestServiceTable({
     setEditingItem(null);
   };
 
-  // Update totalAmount live when fields change in modal
   useEffect(() => {
     if (editingItem) {
       const total =
@@ -83,61 +79,102 @@ export default function GuestServiceTable({
     editingItem?.serviceCharge,
   ]);
 
+  // TanStack Table columns
+  const columnHelper = createColumnHelper<ServiceItem>();
+
+  const columns = useMemo(
+    () => [
+      columnHelper.accessor("serviceName", {
+        header: "Service Name",
+        cell: (info) => info.getValue(),
+      }),
+      columnHelper.accessor("roomNumber", {
+        header: "Room",
+        cell: (info) => info.getValue(),
+      }),
+      columnHelper.accessor("serviceRate", {
+        header: "Rate",
+        cell: (info) => info.getValue(),
+      }),
+      columnHelper.accessor("quantity", {
+        header: "Qty",
+        cell: (info) => info.getValue(),
+      }),
+      columnHelper.accessor("totalAmount", {
+        header: "Total Amount",
+        cell: (info) => info.getValue(),
+      }),
+      columnHelper.display({
+        id: "actions",
+        header: "Action",
+        cell: (info) => {
+          const item = info.row.original;
+          return (
+            <div className="flex gap-2 justify-center">
+              <Button
+                size="sm"
+                className="bg-green-500"
+                onClick={() => handleSave(item.id)}
+              >
+                Save
+              </Button>
+              <Button
+                size="sm"
+                className="bg-blue-600"
+                onClick={() => handleEditClick(item)}
+              >
+                Edit
+              </Button>
+              <Button
+                size="sm"
+                variant="destructive"
+                onClick={() => handleDelete(item.id)}
+              >
+                Delete
+              </Button>
+            </div>
+          );
+        },
+      }),
+    ],
+    [tableData]
+  );
+
+  const table = useReactTable({
+    data: tableData,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+  });
+
   return (
     <div className="w-full overflow-x-auto">
-      {/* table */}
-      <Table>
-        <TableCaption>A list of Services Bill</TableCaption>
-        <TableHeader>
-          <TableRow className="bg-black hover:bg-gray-900 rounded-xl">
-            <TableHead className="text-center text-white">
-              Service Name
-            </TableHead>
-            <TableHead className="text-center text-white">Room</TableHead>
-            <TableHead className="text-center text-white">Rate</TableHead>
-            <TableHead className="text-center text-white">Qty</TableHead>
-            <TableHead className="text-center text-white">
-              Total Amount
-            </TableHead>
-            <TableHead className="text-center text-white">Action</TableHead>
-          </TableRow>
-        </TableHeader>
-
-        <TableBody>
-          {tableData.map((item) => (
-            <TableRow key={item.id} className="text-center">
-              <TableCell>{item.serviceName}</TableCell>
-              <TableCell>{item.roomNumber}</TableCell>
-              <TableCell>{item.serviceRate}</TableCell>
-              <TableCell>{item.quantity}</TableCell>
-              <TableCell>{item.totalAmount}</TableCell>
-              <TableCell className="flex gap-2 justify-center">
-                <Button
-                  size="sm"
-                  className="bg-green-500"
-                  onClick={() => handleSave(item.id)}
-                >
-                  Save
-                </Button>
-                <Button
-                  size="sm"
-                  className="bg-blue-600"
-                  onClick={() => handleEditClick(item)}
-                >
-                  Edit
-                </Button>
-                <Button
-                  size="sm"
-                  variant="destructive"
-                  onClick={() => handleDelete(item.id)}
-                >
-                  Delete
-                </Button>
-              </TableCell>
-            </TableRow>
+      <table className="w-full border-collapse">
+        <thead className="bg-black text-white">
+          {table.getHeaderGroups().map((headerGroup) => (
+            <tr key={headerGroup.id}>
+              {headerGroup.headers.map((header) => (
+                <th key={header.id} className="text-center p-2">
+                  {flexRender(
+                    header.column.columnDef.header,
+                    header.getContext()
+                  )}
+                </th>
+              ))}
+            </tr>
           ))}
-        </TableBody>
-      </Table>
+        </thead>
+        <tbody>
+          {table.getRowModel().rows.map((row) => (
+            <tr key={row.id} className="text-center border-t">
+              {row.getVisibleCells().map((cell) => (
+                <td key={cell.id} className="p-2">
+                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
 
       {/* Edit Modal */}
       <GuestServiceModal

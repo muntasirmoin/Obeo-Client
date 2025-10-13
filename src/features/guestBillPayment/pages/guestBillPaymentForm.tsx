@@ -12,7 +12,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast, Toaster } from "sonner";
-import TitleSubtitle from "@/features/serviceBill/Components/TitleSubtitle";
+import TitleSubtitle from "@/Features/serviceBill/Components/TitleSubtitle";
 
 export type Room = { id: string; name: string };
 export type Guest = { regNo: string; name: string; roomId: string };
