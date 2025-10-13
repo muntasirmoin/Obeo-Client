@@ -21,15 +21,6 @@ import type { ServiceItem } from "../types/guestServiceType";
 import { mockFetchGuestByRoom } from "../types/mockFetchData";
 import GuestServiceTable from "./ServiceBillTable";
 
-// import {
-//   guestServiceSchema,
-//   type ChargeField,
-//   type FormValues,
-// } from "../validations/guestServiceSchema";
-// import { mockFetchGuestByRoom } from "../types/mockFetchData";
-// import type { ServiceItem } from "../types/guestServiceType";
-// import GuestServiceTable from "./ServiceBillTable";
-
 const fieldLabels: Record<string, string> = {
   registrationNumber: "Registration Number",
   fullName: "Full Guest Name",
@@ -185,14 +176,14 @@ export default function GuestServiceForm() {
             </label>
             <div className="flex items-center p-1 bg-gray-50 border border-gray-300 rounded-md shadow-sm">
               <Input
-                type="number"
+                type="text" // take input as string
                 {...field}
                 value={field.value ?? ""}
                 onChange={(e) => {
-                  const val = e.target.value;
+                  const stringValue = e.target.value; // get string first
 
                   // allow empty string while typing
-                  if (val === "") {
+                  if (stringValue === "") {
                     field.onChange("");
                     setCheckedCharges((prev) => ({
                       ...prev,
@@ -201,16 +192,18 @@ export default function GuestServiceForm() {
                     return;
                   }
 
-                  // prevent negative numbers
-                  const valNum = Math.max(Number(val), 0);
-                  field.onChange(valNum);
+                  // convert to number and prevent negative numbers
+                  const numValue = Math.max(Number(stringValue), 0);
+                  field.onChange(numValue);
+
                   setCheckedCharges((prev) => ({
                     ...prev,
-                    [fieldName]: valNum > 0,
+                    [fieldName]: numValue > 0,
                   }));
                 }}
                 className="flex-1 h-8 text-xs border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-400 mr-1"
               />
+
               <Checkbox
                 checked={checked}
                 onCheckedChange={(val) =>
@@ -460,7 +453,7 @@ export default function GuestServiceForm() {
                 <label className="text-xs text-left mb-0.5 ml-0.5 font-medium text-gray-600">
                   Service Rate <span className="text-red-500">*</span>
                 </label>
-                <Input
+                {/* <Input
                   type="number"
                   {...field}
                   min={0}
@@ -470,7 +463,20 @@ export default function GuestServiceForm() {
                     field.onChange(val === "" ? "" : Number(val));
                   }}
                   className="h-9 w-full"
+                /> */}
+                <Input
+                  type="text" // take input as string
+                  {...field}
+                  value={field.value ?? ""}
+                  onChange={(e) => {
+                    const stringValue = e.target.value; // get string
+                    const numberValue =
+                      stringValue === "" ? "" : Number(stringValue); // convert to number
+                    field.onChange(numberValue);
+                  }}
+                  className="h-9 w-full"
                 />
+
                 {errors.serviceRate && (
                   <span className="text-red-500 text-xs">
                     {errors.serviceRate.message ===
@@ -493,23 +499,23 @@ export default function GuestServiceForm() {
                   Service Quantity <span className="text-red-500">*</span>
                 </label>
                 <Input
-                  type="number"
+                  type="text" // take input as string
                   {...field}
-                  min={1}
                   value={field.value ?? ""}
                   onChange={(e) => {
-                    const val = e.target.value;
-                    // Allow empty string for erasing
-                    if (val === "") {
+                    const stringValue = e.target.value; // get string
+                    if (stringValue === "") {
+                      // Allow empty string for erasing
                       field.onChange("");
                     } else {
-                      const num = Number(val);
+                      const numValue = Number(stringValue);
                       // Only accept >= 1
-                      field.onChange(num < 1 ? 1 : num);
+                      field.onChange(numValue < 1 ? 1 : numValue);
                     }
                   }}
-                  onWheel={(e) => (e.currentTarget as HTMLInputElement).blur()} // prevent scroll
+                  // onWheel={(e) => (e.currentTarget as HTMLInputElement).blur()} // prevent scroll
                 />
+
                 {errors.serviceQuantity && (
                   <span className="text-red-500 text-xs">
                     {errors.serviceQuantity.message ===
