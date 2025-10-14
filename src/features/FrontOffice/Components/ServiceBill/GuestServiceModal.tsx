@@ -9,7 +9,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
-import type { ServiceItem } from "../types/guestServiceType";
+import type { ServiceItem } from "../../types/ServiceBillTypes/guestServiceType";
 
 interface GuestServiceModalProps {
   isOpen: boolean;
