@@ -1,4 +1,4 @@
-import GuestServiceForm from "../Components/ServiceBillForm";
+import GuestServiceForm from "../Components/ServiceBill/ServiceBillForm";
 
 const serviceBillPage = () => {
   return (

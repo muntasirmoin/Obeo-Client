@@ -10,7 +10,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner"; // notifications
-import TitleSubtitle from "@/features/serviceBill/Components/TitleSubtitle";
+import TitleSubtitle from "@/Features/FrontOffice/Components/ServiceBill/TitleSubtitle";
 
 export type BillRow = {
   id: string;

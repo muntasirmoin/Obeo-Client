@@ -1,7 +1,8 @@
 import App from "@/App";
-import GuestBillPaymentPage from "@/features/guestBillPayment/pages/guestBillPayment";
-import NightAudit from "@/features/nightAudit/pages/NightAudit";
-import serviceBillPage from "@/features/serviceBill/pages/serviceBillPage";
+import NightAuditPage from "@/Features/FrontOffice/Pages/NightAuditPage";
+import serviceBillPage from "@/Features/FrontOffice/Pages/ServiceBillPage";
+import GuestBillPaymentPage from "@/Features/guestBillPayment/pages/guestBillPayment";
+
 import { createBrowserRouter } from "react-router";
 
 export const router = createBrowserRouter([
@@ -14,9 +15,11 @@ export const router = createBrowserRouter([
         index: true,
       },
       {
-        Component: NightAudit,
-        path: "night-audit",
+        Component: NightAuditPage,
+        path: "night-audit-page",
+        // index: true,
       },
+
       {
         Component: GuestBillPaymentPage,
         path: "guest-bill-payment",
