@@ -27,115 +27,177 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
 import { Edit, Save } from "lucide-react";
 import { Card } from "@/components/ui/card";
-
-type Payment = {
-  date: string;
-  invoiceNo: string;
-  guestInfo: string;
-  paymentType: string;
-  paymentMode: string;
-  totalAmount: number;
-  remarks: string;
-};
-
-const mockData: Payment[] = [
-  {
-    date: "2025-10-15",
-    invoiceNo: "INV-1001",
-    guestInfo: "John Doe (Room 101)",
-    paymentType: "Service",
-    paymentMode: "Cash",
-    totalAmount: 120,
-    remarks: "Paid in full",
-  },
-  {
-    date: "2025-10-14",
-    invoiceNo: "INV-1002",
-    guestInfo: "Jane Smith (Room 102)",
-    paymentType: "Deposit",
-    paymentMode: "Card",
-    totalAmount: 300,
-    remarks: "Partial",
-  },
-  {
-    date: "2025-10-13",
-    invoiceNo: "INV-1003",
-    guestInfo: "Alex Brown (Room 103)",
-    paymentType: "Service",
-    paymentMode: "Online",
-    totalAmount: 180,
-    remarks: "Pending confirmation",
-  },
-  {
-    date: "2025-10-12",
-    invoiceNo: "INV-1004",
-    guestInfo: "Sara Lee (Room 104)",
-    paymentType: "Deposit",
-    paymentMode: "Cash",
-    totalAmount: 500,
-    remarks: "Advance",
-  },
-  {
-    date: "2025-10-11",
-    invoiceNo: "INV-1005",
-    guestInfo: "David Kim (Room 105)",
-    paymentType: "Service",
-    paymentMode: "Card",
-    totalAmount: 240,
-    remarks: "Paid fully",
-  },
-];
+import { toast } from "sonner";
+import { mockData } from "../../types/GuestBillTypes/mockFetchData";
+import {
+  paymentModeOptions,
+  paymentTypeOptions,
+  type Payment,
+} from "../../types/GuestBillTypes/guestBillDataTypes";
 
 export default function BillPaymentDetailsTable() {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [data, setData] = React.useState<Payment[]>(mockData);
   const [globalFilter, setGlobalFilter] = React.useState("");
   const [entries, setEntries] = React.useState("2");
+  const [editingRow, setEditingRow] = React.useState<string | null>(null);
+  const [editedRow, setEditedRow] = React.useState<Partial<Payment>>({});
+
+  const handleEdit = (rowId: string, rowData: Payment) => {
+    setEditingRow(rowId);
+    setEditedRow({ ...rowData });
+  };
+
+  const handleSaveEdit = (rowId: string) => {
+    setData((prev) =>
+      prev.map((item) =>
+        item.invoiceNo === rowId ? { ...item, ...editedRow } : item
+      )
+    );
+    toast.success("Edit saved successfully!");
+    setEditingRow(null);
+    setEditedRow({});
+  };
+
+  const handleSaveData = (rowId: string) => {
+    setData((prev) => prev.filter((item) => item.invoiceNo !== rowId));
+    toast.success("Payment saved successfully!");
+  };
 
   const columns = React.useMemo<ColumnDef<Payment>[]>(
     () => [
       { accessorKey: "date", header: "Date" },
       { accessorKey: "invoiceNo", header: "Invoice No" },
       { accessorKey: "guestInfo", header: "Guest Information" },
-      { accessorKey: "paymentType", header: "Payment Type" },
-      { accessorKey: "paymentMode", header: "Payment Mode" },
+      {
+        accessorKey: "paymentType",
+        header: "Payment Type",
+        cell: ({ row }) =>
+          editingRow === row.original.invoiceNo ? (
+            <Select
+              value={editedRow.paymentType}
+              onValueChange={(value) =>
+                setEditedRow((prev) => ({ ...prev, paymentType: value }))
+              }
+            >
+              <SelectTrigger className="h-8 w-full text-sm">
+                <SelectValue placeholder="Select Type" />
+              </SelectTrigger>
+              <SelectContent>
+                {paymentTypeOptions.map((type) => (
+                  <SelectItem key={type} value={type}>
+                    {type}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : (
+            row.original.paymentType
+          ),
+      },
+      {
+        accessorKey: "paymentMode",
+        header: "Payment Mode",
+        cell: ({ row }) =>
+          editingRow === row.original.invoiceNo ? (
+            <Select
+              value={editedRow.paymentMode}
+              onValueChange={(value) =>
+                setEditedRow((prev) => ({ ...prev, paymentMode: value }))
+              }
+            >
+              <SelectTrigger className="h-8 w-full text-sm">
+                <SelectValue placeholder="Select Mode" />
+              </SelectTrigger>
+              <SelectContent>
+                {paymentModeOptions.map((mode) => (
+                  <SelectItem key={mode} value={mode}>
+                    {mode}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : (
+            row.original.paymentMode
+          ),
+      },
       {
         accessorKey: "totalAmount",
         header: "Total Amount",
-        cell: ({ row }) => (
-          <span className="font-medium text-gray-700">
-            ${row.original.totalAmount.toFixed(2)}
-          </span>
-        ),
+        cell: ({ row }) =>
+          editingRow === row.original.invoiceNo ? (
+            <Input
+              type="text" // keep as string
+              value={editedRow.totalAmount}
+              onChange={(e) =>
+                setEditedRow((prev) => ({
+                  ...prev,
+                  totalAmount: Number(e.target.value), // convert string to number in state
+                }))
+              }
+              className="h-8 text-sm"
+            />
+          ) : (
+            `${row.original.totalAmount.toFixed(2)}`
+          ),
       },
-      { accessorKey: "remarks", header: "Remarks" },
+      {
+        accessorKey: "remarks",
+        header: "Remarks",
+        cell: ({ row }) =>
+          editingRow === row.original.invoiceNo ? (
+            <Input
+              value={editedRow.remarks}
+              onChange={(e) =>
+                setEditedRow((prev) => ({ ...prev, remarks: e.target.value }))
+              }
+              className="h-8 text-sm"
+            />
+          ) : (
+            row.original.remarks
+          ),
+      },
       {
         id: "actions",
         header: "Action",
-        cell: () => (
-          <div className="flex items-center justify-center gap-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="hover:bg-blue-50 text-blue-600"
-            >
-              <Edit size={18} />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="hover:bg-green-50 text-green-600"
-            >
-              <Save size={18} />
-            </Button>
+        cell: ({ row }) => (
+          <div className="flex items-center justify-center gap-2">
+            {editingRow === row.original.invoiceNo ? (
+              <Button
+                size="sm"
+                onClick={() => handleSaveEdit(row.original.invoiceNo)}
+                className="bg-green-500 text-white hover:bg-green-600"
+              >
+                Save
+              </Button>
+            ) : (
+              <>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="hover:bg-blue-50 text-blue-600"
+                  onClick={() =>
+                    handleEdit(row.original.invoiceNo, row.original)
+                  }
+                >
+                  <Edit size={18} />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => handleSaveData(row.original.invoiceNo)}
+                  className="hover:bg-green-50 text-green-600"
+                >
+                  <Save size={18} />
+                </Button>
+              </>
+            )}
           </div>
         ),
       },
     ],
-    []
+    [editingRow, editedRow]
   );
 
   const table = useReactTable({
@@ -148,19 +210,16 @@ export default function BillPaymentDetailsTable() {
     getPaginationRowModel: getPaginationRowModel(),
   });
 
-  // handle show entries
   React.useEffect(() => {
     table.setPageSize(Number(entries));
   }, [entries]);
 
   return (
     <Card className="p-6 shadow-lg border border-gray-100 rounded-2xl bg-white">
-      {/* Heading */}
       <h2 className="text-2xl font-semibold mb-4 text-left border-b pb-2">
         Bill Payment Details
       </h2>
 
-      {/* Row 2: Show entries + Search */}
       <div className="flex flex-col md:flex-row justify-between items-center mb-3 gap-3">
         <div className="flex items-center gap-2">
           <span className="text-sm text-gray-600">Show</span>
@@ -185,7 +244,6 @@ export default function BillPaymentDetailsTable() {
         />
       </div>
 
-      {/* Table */}
       <div className="overflow-x-auto rounded-lg border border-gray-200">
         <Table>
           <TableHeader className="bg-gray-50">
@@ -237,7 +295,6 @@ export default function BillPaymentDetailsTable() {
         </Table>
       </div>
 
-      {/* Pagination */}
       <div className="flex justify-between items-center mt-4">
         <Button
           variant="outline"

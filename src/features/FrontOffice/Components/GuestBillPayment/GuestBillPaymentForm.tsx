@@ -10,21 +10,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-
-type FormValues = {
-  roomNo: string;
-  registrationNo: string;
-  paymentType: string;
-  paymentMode: string;
-  currencyType: string;
-  paymentAmount: string;
-  remarks: string;
-};
-
-const roomOptions = ["Room 101", "Room 102", "Room 103"];
-const paymentTypeOptions = ["Service", "Deposit", "Other"];
-const paymentModeOptions = ["Cash", "Card", "Online"];
-const currencyOptions = ["USD", "BDT", "EUR"];
+import {
+  currencyOptions,
+  paymentModeOptions,
+  paymentTypeOptions,
+  roomOptions,
+  type FormValues,
+} from "../../types/GuestBillTypes/guestBillDataTypes";
 
 export default function GuestBillPaymentForm() {
   const {
