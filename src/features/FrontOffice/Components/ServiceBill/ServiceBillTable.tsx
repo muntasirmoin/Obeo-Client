@@ -8,8 +8,9 @@ import {
 } from "@tanstack/react-table";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import type { ServiceItem } from "../types/guestServiceType";
+
 import GuestServiceModal from "./GuestServiceModal";
+import type { ServiceItem } from "../../types/ServiceBillTypes/guestServiceType";
 
 interface TableProps {
   tableData: ServiceItem[];
