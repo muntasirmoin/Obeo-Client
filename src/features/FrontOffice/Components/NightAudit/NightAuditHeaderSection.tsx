@@ -14,10 +14,16 @@ import { Calendar } from "@/components/ui/calendar";
 export default function NightAuditHeaderSection() {
   const [auditDate, setAuditDate] = useState<Date | undefined>(new Date());
   const [roomNo, setRoomNo] = useState("");
+  const [error, setError] = useState("");
+  const [open, setOpen] = useState(false);
 
   const formattedDate = auditDate ? format(auditDate, "dd/MM/yyyy") : "";
 
   const handleSearch = () => {
+    if (!roomNo.trim()) {
+      setError("Room No. is required");
+      return;
+    }
     if (!roomNo) {
       toast.error("Please enter a room number!");
       return;
@@ -57,7 +63,7 @@ export default function NightAuditHeaderSection() {
           <label className="text-sm text-left ml-1 font-medium mb-1">
             Audit Date:
           </label>
-          <Popover>
+          <Popover open={open} onOpenChange={setOpen}>
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
@@ -71,7 +77,10 @@ export default function NightAuditHeaderSection() {
               <Calendar
                 mode="single"
                 selected={auditDate}
-                onSelect={setAuditDate}
+                onSelect={(date) => {
+                  setAuditDate(date);
+                  setOpen(false); // close popover automatically
+                }}
                 initialFocus
               />
             </PopoverContent>
@@ -88,6 +97,9 @@ export default function NightAuditHeaderSection() {
             value={roomNo}
             onChange={(e) => setRoomNo(e.target.value)}
           />
+          {error && (
+            <p className="text-left text-red-500 text-xs mt-1 ml-1">{error}</p>
+          )}
         </div>
 
         {/* Search Button */}
