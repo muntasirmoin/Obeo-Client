@@ -22,7 +22,7 @@ export const router = createBrowserRouter([
 
       {
         Component: GuestBillPaymentPage,
-        path: "guest-bill-payment",
+        path: "guest-bill-page",
       },
     ],
   },
