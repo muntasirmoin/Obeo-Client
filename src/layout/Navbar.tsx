@@ -8,7 +8,7 @@ export default function Navbar() {
     { href: "/", label: "Service Bill" },
     // { href: "/night-audit", label: "Night-Audit" },
     { href: "/night-audit-page", label: "Night-Audit-page" },
-    { href: "/guest-bill-payment", label: "Guest-Bill-Payment" },
+    { href: "/guest-bill-page", label: "Guest-Bill-Payment" },
     // Add more links here
     // { href: "/about", label: "About" },
     // { href: "/contact", label: "Contact" },
