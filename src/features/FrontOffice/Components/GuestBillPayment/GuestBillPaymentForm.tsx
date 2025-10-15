@@ -75,8 +75,8 @@ export default function GuestBillPaymentForm() {
   };
 
   return (
-    <div className="w-full bg-white/90 backdrop-blur-lg rounded-2xl shadow-xl border border-blue-100 p-8 transition-all duration-300 hover:shadow-2xl">
-      <h2 className="text-3xl text-left font-semibold tracking-tight mb-6 border-b pb-2">
+    <div className="w-full bg-white/90 backdrop-blur-lg rounded-2xl  border border-blue-100 p-4 transition-all duration-300 ">
+      <h2 className="text-2xl text-left font-semibold tracking-tight mb-6 border-b pb-2">
         Search Information
       </h2>
 
