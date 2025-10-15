@@ -215,14 +215,16 @@ export default function BillPaymentDetailsTable() {
   }, [entries]);
 
   return (
-    <Card className="p-6 shadow-lg border border-gray-100 rounded-2xl bg-white">
-      <h2 className="text-2xl font-semibold mb-4 text-left border-b pb-2">
+    <Card className="p-3 shadow-lg border border-gray-100 rounded-2xl bg-white">
+      <h2 className="text-2xl font-semibold mb-2 text-left border-b pb-2">
         Bill Payment Details
       </h2>
 
-      <div className="flex flex-col md:flex-row justify-between items-center mb-3 gap-3">
+      {/* show entries */}
+
+      <div className="flex flex-col md:flex-row justify-between items-center  gap-2">
         <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-600">Show</span>
+          <span className="text-sm text-gray-600 ml-1">Show</span>
           <Select value={entries} onValueChange={setEntries}>
             <SelectTrigger className="w-20 h-8 text-sm">
               <SelectValue placeholder="5" />
@@ -243,6 +245,8 @@ export default function BillPaymentDetailsTable() {
           className="w-full md:w-64 h-9"
         />
       </div>
+
+      {/* table */}
 
       <div className="overflow-x-auto rounded-lg border border-gray-200">
         <Table>
@@ -295,7 +299,9 @@ export default function BillPaymentDetailsTable() {
         </Table>
       </div>
 
-      <div className="flex justify-between items-center mt-4">
+      {/* pagination */}
+
+      <div className="flex justify-end items-center gap-3 mt-4">
         <Button
           variant="outline"
           size="sm"

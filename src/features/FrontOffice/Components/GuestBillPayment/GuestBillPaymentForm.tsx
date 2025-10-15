@@ -42,7 +42,7 @@ export default function GuestBillPaymentForm() {
   const onSubmit = (data: FormValues) => {
     const paymentAmountNumber = Number(data.paymentAmount);
     toast.success(
-      `💳 Payment of ${paymentAmountNumber} submitted successfully!`
+      `💳 Payment of Amount: ${paymentAmountNumber} submitted successfully!`
     );
     handleClear();
   };
