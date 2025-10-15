@@ -1,7 +1,7 @@
 import App from "@/App";
+import GuestBillPaymentPage from "@/Features/FrontOffice/Pages/GuestBillPaymentPage";
 import NightAuditPage from "@/Features/FrontOffice/Pages/NightAuditPage";
 import serviceBillPage from "@/Features/FrontOffice/Pages/ServiceBillPage";
-import GuestBillPaymentPage from "@/Features/guestBillPayment/pages/guestBillPayment";
 
 import { createBrowserRouter } from "react-router";
 
