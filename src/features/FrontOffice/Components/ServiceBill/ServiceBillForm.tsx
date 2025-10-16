@@ -29,7 +29,7 @@ const fieldLabels: Record<string, string> = {
 };
 const fields = Object.keys(fieldLabels);
 
-// ----------------- GuestServiceForm -----------------
+// ----------------- GuestServiceForm -----
 export default function GuestServiceForm() {
   const {
     register,
